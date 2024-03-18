@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<!-- Program exported to HTML using the KA Project Exporter by @MushyAvocado 
+https://www.khanacademy.org/computer-programming/ka-project-exporter/5195486791385088
+-->
+	
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<title>Level Editor</title>
+	<style>
+		
+		
+		/* Change the color as you want */
+		:root {
+			--background-color: #000000;
+		}
+		
+		
+		html, body, #wrapper {
+			overflow: hidden;
+			width: 100%;
+		    height: 100%;
+			margin: 0px;
+			padding: 0px;
+		    width: calc(100% + 1px);
+		}
+		
+		body {
+		    background-color: var(--background-color);
+		}
+		
+		
+		canvas {
+			width: fit-content;
+			height: fit-content;
+		}
+		
+		canvas:focus {
+			outline: none;
+		}
+		
+		/* Automatically fits to the remaining height and centers the canvas it contains */
+		#wrapper {
+			padding: 0px;
+			margin: 0px;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			width: 100%;
+		}
+		
+</style>
+</head>
+<body id="wrapper">
+    <!-- Canvases with a class of "sketch" are applied to the program in the order importPJS() is called. -->
+    <canvas class="sketch"></canvas>
+	<!-- Load the PJS library -->
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/Khan/processing-js@master/processing.js"></script>
+	<!-- The exporter script must be loaded before the program script -->
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/Mushy-Avocado/KA-exporter@main/exporter.js"></script>
+	<!-- Run Khan Academy program and import PJS -->
+	<script type="application/javascript">
+		
+		
+		function program() {
+		    
+		    title("Level Editor");
+		    size(400, 400);
+		    
+		    // All code goes here
+			
+			
+			
+			
+			// paste level code here to edit an existing level
+			var level = [];
+			
+			// size of the tiles
+			var bw = 20;
+			
+			// width and height of the level
+			var w = 15, h = 15;
+			
+			// change this to include new blocks
+			var blocks = {
+			    // block (white)
+			    "#": color(230, 230, 230),
+			    
+			    // lava (red)
+			    "x": color(227, 50, 50),
+			    
+			    // portal (yellow)
+			    "+": color(247, 226, 91),
+			    
+			    // trampoline (purple)
+			    "b": color(214, 129, 235),
+			    
+			    // player spawn (green)
+			    "@": color(96, 212, 115),
+			};
+			
+			
+			
+			
+			var keys = Object.keys(blocks);
+			
+			var click = false, press = false;
+			var brush = keys[0];
+			
+			var canvas = {
+			    mx: 0,
+			    my: 0,
+			    
+			    x: 100,
+			    y: 80,
+			    
+			    w: w,
+			    h: h
+			};
+			
+			
+			
+			function mouseIn(x, y, w, h) {
+			  return mouseX > x && mouseY > y && mouseX < x + w && mouseY < y + h;
+			}
+			function inside(px, py, x, y, w, h) {
+			  return py >= y && py < y + h && px >= x && px < x + w;
+			}
+			
+			function Cell(x, y, c) {
+			    this.x = x*bw;
+			    this.y = y*bw;
+			    
+			    this.indX = x;
+			    this.indY = y;
+			    
+			    this.char = c || false;
+			}
+			Cell.prototype.mouseIn = function() {
+			    return inside(canvas.mx, canvas.my, this.x, this.y, bw, bw);
+			};
+			Cell.prototype.draw = function(x, y) {
+			    this.x = x;
+			    this.y = y;
+			    if(blocks[this.char]) {
+			        fill(blocks[this.char]);
+			        rect(this.x, this.y, bw, bw);
+			    } else {
+			        fill(255, 40);
+			        ellipse(this.x + 0.5*bw, this.y + 0.5*bw, 4, 4);
+			    }
+			};
+			
+			function drawLevel() {
+			    noStroke();
+			    for(var y = 0; y < level.length; y++) {
+			        for(var x = 0; x < level[y].length; x++) {
+			            level[y][x].draw(x*bw, y*bw);
+			        }
+			    }
+			}
+			function createLevel(w, h) {
+			    var l = [];
+			    for(var y = 0; y < h; y++) {
+			        l.push([]);
+			        for(var x = 0; x < w; x++) {
+			            if(y < level.length) {
+			                l[y].push(new Cell(x, y, level[y][x]));
+			            } else {
+			                l[y].push(new Cell(x, y));
+			            }
+			        }
+			    }
+			    
+			    canvas.x = 200 - canvas.w*bw*0.5;
+			    canvas.y = 180 - canvas.h*bw*0.5;
+			    level = l;
+			}
+			createLevel(canvas.w, canvas.h);
+			
+			
+			
+			function printSave() {
+			    var arr = [];
+			    _clearLogs();
+			    println("[");
+			    for(var y = 0; y < level.length; y++) {
+			        var t = "    \"";
+			        for(var x = 0; x < level[y].length; x++) {
+			            t += level[y][x].char ? level[y][x].char : " ";
+			        }
+			        println(t + '",');
+			    }
+			    println("],");
+			}
+			function saveButton(x, y) {
+			    
+			    pushMatrix();
+			    translate(x + 5, y + 5);
+			    
+			    stroke(214, 197, 197);
+			    strokeWeight(2);
+			    noFill();
+			    
+			    if(mouseIn(365, 365, 30, 30)) {
+			        cursor(HAND);
+			        if(click) {
+			            printSave();
+			        }
+			        translate(10, 10);
+			        scale(1.2);
+			        translate(-10, -10);
+			        strokeWeight(2.0);
+			    }
+			    
+			    beginShape();
+			        vertex(0, 0);
+			        vertex(15, 0);
+			        vertex(20, 5);
+			        vertex(20, 20);
+			        vertex(0, 20);
+			    endShape(CLOSE);
+			    
+			    rect(5, 12, 10, 8);
+			    
+			    for(var i = 0; i < 3; i++) {
+			        line(5 + i*4, 5, 5 + i*4, 7);
+			    }
+			    
+			    
+			    popMatrix();
+			}
+			function brushButton(x, y, k) {
+			    noStroke();
+			    fill(blocks[k]);
+			    
+			    if(brush === k) {
+			        rect(x - 3, y - 3, 26, 26, 5);
+			    }
+			    if(mouseIn(x, y, 20, 20)) {
+			        rect(x - 2, y - 2, 24, 24, 5);
+			        cursor(HAND);
+			        
+			        if(click) {
+			            brush = k;
+			        }
+			    }
+			    rect(x, y, 20, 20, 5);
+			}
+			
+			draw = function() {
+			    background(56, 26, 56);
+			    cursor(ARROW);
+			    
+			    canvas.mx = mouseX - canvas.x;
+			    canvas.my = mouseY - canvas.y;
+			    
+			    translate(canvas.x, canvas.y);
+			    
+			    drawLevel();
+			    
+			    if(inside(canvas.mx, canvas.my, 0, 0, level[0].length*bw, level.length*bw)) {
+			        cursor("crosshair");
+			        stroke(56, 26, 56);
+			        strokeWeight(2);
+			        fill(255, 30);
+			        rect((~~(canvas.mx/bw))*bw + 1, (~~(canvas.my/bw))*bw + 1, bw - 2, bw - 2);
+			        
+			        if(press && mouseButton === RIGHT) {
+			            level[~~(canvas.my/bw)][~~(canvas.mx/bw)].char = false;
+			        } else if(press) {
+			            level[~~(canvas.my/bw)][~~(canvas.mx/bw)].char = brush;
+			        }
+			        
+			        noStroke();
+			        fill(blocks[brush]);
+			        ellipse(canvas.mx + 10, canvas.my - 10, 5, 5);
+			    }
+			    
+			    resetMatrix();
+			    noStroke();
+			    
+			    fill(79, 41, 70);
+			    rect(0, 360, width, 40);
+			    
+			    for(var i = 0; i < keys.length && i < 12; i++) {
+			        brushButton(10 + i*30, 370, keys[i]);
+			    }
+			    
+			    saveButton(365, 365);
+			    
+			    click = false;
+			};
+			
+			
+			function mousePressed() {
+			    press = true;
+			    click = true;
+			}
+			function mouseReleased() {
+			    press = false;
+			}
+			function mouseOut() {
+			    press = false;
+			}
+			keyPressed = function() {
+			    if(keyCode === 10) {
+			        printSave();
+			    }
+			    
+			    if(keyCode === DOWN) {
+			        level.unshift(level.pop());
+			    }
+			    if(keyCode === UP) {
+			        level.push(level.shift());
+			    }
+			    
+			    if(keyCode === LEFT) {
+			        for(var i = 0; i < level.length; i++) {
+			            level[i].push(level[i].shift());
+			        }
+			    }
+			    if(keyCode === RIGHT) {
+			        for(var i = 0; i < level.length; i++) {
+			            level[i].unshift(level[i].pop());
+			        }
+			    }
+			};
+			
+			
+		}
+		
+		runPJS(program);
+		
+		// Add reload button on KA --> <script>
+		
+	</script>
+</body>
+
+</html>
